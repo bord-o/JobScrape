@@ -1,56 +1,96 @@
 #!/home/bordo/.local/share/virtualenvs/JobScrape-478cIvc0/bin/python3
 from time import sleep
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
+from urllib3.exceptions import MaxRetryError
 
-JOBS_URL = 'https://www.ycombinator.com/jobs'
-JOBS_LOGIN_URL = 'https://account.ycombinator.com/?continue=https%3A%2F%2Fwww.workatastartup.com%2F'
-JOBS_USER = 'brodylittle011@gmail.com'
-JOBS_PASS = '0nly?Consept'
 
-foxopts = webdriver.FirefoxOptions()
-# foxopts.add_argument("--headless")
+def extractTech(jobLink, headless=True):
+    foxopts = webdriver.FirefoxOptions()
+    if headless:
+        foxopts.add_argument("--headless")
 
-driver = webdriver.Firefox(options=foxopts)
-driver.get(JOBS_LOGIN_URL)
+    driver = webdriver.Firefox(options=foxopts)
+    print("Launching Selenium browser...")
+    driver.get(jobLink)
+    try:
+        tech = driver.find_element(By.CSS_SELECTOR, 'div.sm\:block:nth-child(3) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > p:nth-child(1)')
+        print(tech.text)
+        driver.quit()
+        return tech.text
 
-username_input = driver.find_element(By.ID, "ycid-input")
-password_input = driver.find_element(By.ID, "password-input")
-#print(username_input)
+    except NoSuchElementException:
+        print("No tech field found for this company...")
+        driver.quit()
+        return "***"
 
-username_input.send_keys(JOBS_USER)
-password_input.send_keys(JOBS_PASS)
+    '''
+    except MaxRetryError:
+        print("urllib3 max retries exceeded")
+        driver.quit()
+    '''
 
-login_button = driver.find_element(By.CSS_SELECTOR, "button.sign-in-button" )
-login_button.click()
 
-sleep(10)
 
-for i in range(20):
-    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    sleep(4)
+def YCombLogin(username, password, headless=True, depth=2, writeFile=False):
 
-company_names = driver.find_elements(By.CSS_SELECTOR, "span.company-name")
+    if depth < 2:
+        print("depth must be greater than 2...")
+        return []
 
-company_links_list = []
-company_names_list = []
+    JOBS_URL = 'https://account.ycombinator.com/?continue=https%3A%2F%2Fwww.workatastartup.com%2F'
+    foxopts = webdriver.FirefoxOptions()
+    if headless:
+        foxopts.add_argument("--headless")
 
-for n in company_names:
-    # use parent element of name to get link
-    company_links_list.append(n.find_element(By.XPATH, '..').get_attribute('href'))
+    driver = webdriver.Firefox(options=foxopts)
+    print("Launching Selenium browser...")
+    driver.get(JOBS_URL)
 
-    # lowercase the company name text
-    company_names_list.append(n.text.lower())
+    username_input = driver.find_element(By.ID, "ycid-input")
+    password_input = driver.find_element(By.ID, "password-input")
 
-print("company names: ", len(company_names_list))
-print("company links: ", len(company_links_list))
+    username_input.send_keys(username)
+    password_input.send_keys(password)
 
-with open('./companies.txt', "w") as file:
-    file.write('\n'.join(company_names_list))
+    login_button = driver.find_element(By.CSS_SELECTOR,
+                                       "button.sign-in-button")
+    login_button.click()
+    print("Trying to log in...")
 
-with open('./complinks.txt', "w") as file:
-    file.write('\n'.join(company_links_list))
+    sleep(10)
 
+    print(f"Trying to scrape {depth*10} jobs...")
+
+    for i in range(depth-1):
+        driver.execute_script("window.scrollTo(0,document.body.scrollHeight);")
+        print("sleeping for ajax load")
+        sleep(4)
+
+    company_names = driver.find_elements(By.CSS_SELECTOR, "span.company-name")
+
+    company_links_list = []
+    company_names_list = []
+
+    for n in company_names:
+        # use parent element of name to get link
+        company_links_list.append(n.find_element(By.XPATH, '..')
+                                   .get_attribute('href'))
+
+        # lowercase the company name text
+        company_names_list.append(n.text.lower())
+
+    print("found company names: ", len(company_names_list))
+    print("found company links: ", len(company_links_list))
+
+    if writeFile:
+        with open('./comp.txt', "w") as file:
+            file.write('\n'.join(company_names_list))
+
+        with open('./links.txt', "w") as file:
+            file.write('\n'.join(company_links_list))
+
+    driver.quit()
+
+    return company_links_list

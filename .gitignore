@@ -1,0 +1,4 @@
+./stor
+*.log
+./__pycache__
+
