@@ -4,7 +4,15 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from urllib3.exceptions import MaxRetryError
+import json
+from bs4 import BeautifulSoup
 
+
+def getTech(r):
+    soup = BeautifulSoup(r, 'html.parser')
+    jsonbs = str(soup.findAll(attrs= {"data-component-name": "FullCompanyProfile"})[0].text)
+    jsonparsed = json.loads(jsonbs)
+    return jsonparsed['rawCompany']['tech_description']
 
 def addwww(str):
     return "https://www." + (str.split("https://")[1])
