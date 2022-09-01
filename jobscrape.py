@@ -3,8 +3,8 @@ import scrape
 import asyncReq
 
 JOBS_URL = 'https://account.ycombinator.com/?continue=https%3A%2F%2Fwww.workatastartup.com%2F'
-JOBS_USER = 'brodylittle011@gmail.com'
-JOBS_PASS = '0nly?Consept'
+JOBS_USER = '' #add ycomb login
+JOBS_PASS = ''
 
 HEADLESS = False
 
