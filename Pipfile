@@ -5,6 +5,10 @@ name = "pypi"
 
 [packages]
 selenium = "*"
+httpx = "*"
+bs4 = "*"
+textblob = "*"
+nltk = "*"
 
 [dev-packages]
 

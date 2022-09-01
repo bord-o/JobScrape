@@ -4,33 +4,18 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from urllib3.exceptions import MaxRetryError
+import json
+from bs4 import BeautifulSoup
 
 
-def extractTech(jobLink, headless=True):
-    foxopts = webdriver.FirefoxOptions()
-    if headless:
-        foxopts.add_argument("--headless")
+def getTech(r):
+    soup = BeautifulSoup(r, 'html.parser')
+    jsonbs = str(soup.findAll(attrs= {"data-component-name": "FullCompanyProfile"})[0].text)
+    jsonparsed = json.loads(jsonbs)
+    return jsonparsed['rawCompany']['tech_description']
 
-    driver = webdriver.Firefox(options=foxopts)
-    print("Launching Selenium browser...")
-    driver.get(jobLink)
-    try:
-        tech = driver.find_element(By.CSS_SELECTOR, 'div.sm\:block:nth-child(3) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > p:nth-child(1)')
-        print(tech.text)
-        driver.quit()
-        return tech.text
-
-    except NoSuchElementException:
-        print("No tech field found for this company...")
-        driver.quit()
-        return "***"
-
-    '''
-    except MaxRetryError:
-        print("urllib3 max retries exceeded")
-        driver.quit()
-    '''
-
+def addwww(str):
+    return "https://www." + (str.split("https://")[1])
 
 
 def YCombLogin(username, password, headless=True, depth=2, writeFile=False):
